@@ -27,10 +27,11 @@ let maze = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ];
 
-// Initialize game board
-// Initialize game board
 function initializeGame() {
     main.innerHTML = '';
+    score = 0;
+    scoreElement.textContent = '0';
+
     for (let y = 0; y < maze.length; y++) {
         for (let x = 0; x < maze[y].length; x++) {
             let block = document.createElement('div');
@@ -45,7 +46,7 @@ function initializeGame() {
                 case 2:
                     block.id = 'player';
                     let mouth = document.createElement('div');
-                    mouth.classList.add('right'); // Default direction
+                    mouth.classList.add('right');
                     block.appendChild(mouth);
                     break;
                 case 3:
@@ -62,8 +63,6 @@ function initializeGame() {
     }
 }
 
-
-// Player movement functions
 function movePlayer(direction) {
     if (!gameStarted) return;
 
@@ -92,11 +91,32 @@ function movePlayer(direction) {
     }
 
     if (isValidMove(newX, newY)) {
+        // Store the previous value before moving
+        const targetValue = maze[newY][newX];
+
+        // Update player position in maze
         maze[playerPos.y][playerPos.x] = 0;
         maze[newY][newX] = 2;
+        
+        // Move player visually
         player.style.gridColumnStart = newX + 1;
         player.style.gridRowStart = newY + 1;
-        checkCollisions(newX, newY);
+
+        // Handle point collection
+        const pointElement = document.querySelector(
+            `.point[style*="grid-column-start: ${newX + 1}"][style*="grid-row-start: ${newY + 1}"]`
+        );
+        if (pointElement) {
+            pointElement.remove();
+            score += 10;
+            scoreElement.textContent = score;
+            checkWinCondition();
+        }
+
+        // Handle enemy collision
+        if (targetValue === 3) {
+            handleEnemyCollision();
+        }
     }
 }
 
@@ -111,40 +131,21 @@ function getElementPosition(element) {
     };
 }
 
-// Collision detection
-function checkCollisions(x, y) {
-    // Check if player is on a point (value 0 in the maze)
-    if (maze[y][x] === 0) {
-        // Remove the point from the maze
-        maze[y][x] = 0;
-
-        // Find the point block and remove it
-        const targetElement = document.querySelector(`[style*="grid-column-start: ${x + 1}"][style*="grid-row-start: ${y + 1}"]`);
-        if (targetElement) {
-            targetElement.remove();
-            score += 10;
-            scoreElement.textContent = score;
-            checkWinCondition();
-        }
-    }
-    
-    // Check for enemy collision
-    if (maze[y][x] === 3) {
-        handleEnemyCollision();
-    }
-}
-
-
 function handleEnemyCollision() {
+    if (!gameStarted) return;
+    
     const player = document.querySelector('#player');
     player.classList.add('hit');
     lives--;
     updateLives();
+    gameStarted = false;  // Temporarily disable movement
     
     setTimeout(() => {
         player.classList.remove('hit');
         if (lives <= 0) {
             gameOver();
+        } else {
+            gameStarted = true;  // Re-enable movement
         }
     }, 1500);
 }
@@ -157,11 +158,51 @@ function updateLives() {
     }
 }
 
-// Game state functions
+function moveEnemies() {
+    if (!gameStarted) return;
+    
+    const enemies = document.querySelectorAll('.enemy');
+    const player = document.querySelector('#player');
+    const playerPos = getElementPosition(player);
+
+    enemies.forEach(enemy => {
+        const enemyPos = getElementPosition(enemy);
+        
+        // Check for immediate collision with player
+        if (Math.abs(enemyPos.x - playerPos.x) <= 1 && 
+            Math.abs(enemyPos.y - playerPos.y) <= 1) {
+            handleEnemyCollision();
+            return;
+        }
+
+        const directions = ['up', 'down', 'left', 'right'];
+        const direction = directions[Math.floor(Math.random() * directions.length)];
+        let newX = enemyPos.x;
+        let newY = enemyPos.y;
+
+        switch (direction) {
+            case 'up': newY--; break;
+            case 'down': newY++; break;
+            case 'left': newX--; break;
+            case 'right': newX++; break;
+        }
+
+        if (isValidMove(newX, newY) && maze[newY][newX] !== 2) {
+            // Update enemy position in maze
+            maze[enemyPos.y][enemyPos.x] = 0;
+            maze[newY][newX] = 3;
+            
+            // Move enemy visually
+            enemy.style.gridColumnStart = newX + 1;
+            enemy.style.gridRowStart = newY + 1;
+        }
+    });
+}
+
 function checkWinCondition() {
     const remainingPoints = document.querySelectorAll('.point').length;
     if (remainingPoints === 0) {
-        showGameOver("You Win! All points collected!");
+        gameOver("You Win! All points collected!");
     }
 }
 
@@ -220,36 +261,9 @@ startButton.addEventListener('click', () => {
     updateLives();
 });
 
-// Enemy movement
-function moveEnemies() {
-    if (!gameStarted) return;
-    
-    const enemies = document.querySelectorAll('.enemy');
-    enemies.forEach(enemy => {
-        const directions = ['up', 'down', 'left', 'right'];
-        const direction = directions[Math.floor(Math.random() * directions.length)];
-        const pos = getElementPosition(enemy);
-        let newX = pos.x;
-        let newY = pos.y;
-
-        switch (direction) {
-            case 'up': newY--; break;
-            case 'down': newY++; break;
-            case 'left': newX--; break;
-            case 'right': newX++; break;
-        }
-
-        if (isValidMove(newX, newY)) {
-            enemy.style.gridColumnStart = newX + 1;
-            enemy.style.gridRowStart = newY + 1;
-        }
-    });
-}
-
 // Start enemy movement
 setInterval(moveEnemies, 1000);
 
-// Score saving
 function saveScore() {
     const playerName = prompt("Enter your name for the leaderboard:");
     if (playerName) {

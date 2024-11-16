@@ -12,6 +12,16 @@ const startDiv = document.querySelector('.startDiv');
 const startButton = document.querySelector('.start');
 const scoreElement = document.querySelector('.score p');
 const livesElement = document.querySelector('.lives ul');
+const collisionSound = document.getElementById('collisionSound');
+const startSound = document.getElementById('startSound');
+const pointSound = document.getElementById('pointSound');
+startButton.addEventListener('click', () => {
+    startDiv.style.display = 'none';
+    gameStarted = true;
+    startSound.play(); // Play start sound
+    initializeGame();
+    updateLives();
+});
 
 // Initial maze configuration
 let maze = [
@@ -110,6 +120,7 @@ function movePlayer(direction) {
             pointElement.remove();
             score += 10;
             scoreElement.textContent = score;
+            pointSound.play();
             checkWinCondition();
         }
 
@@ -134,6 +145,8 @@ function getElementPosition(element) {
 function handleEnemyCollision() {
     if (!gameStarted) return;
     
+
+    collisionSound.play();
     const player = document.querySelector('#player');
     player.classList.add('hit');
     lives--;
@@ -257,6 +270,7 @@ document.getElementById('rbttn').addEventListener('click', () => movePlayer('rig
 startButton.addEventListener('click', () => {
     startDiv.style.display = 'none';
     gameStarted = true;
+    startSound.play();
     initializeGame();
     updateLives();
 });

@@ -2,12 +2,12 @@
 let gameStarted = false;
 let score = 0;
 let lives = 3;
-let upPressed = false;
-let downPressed = false;
-let leftPressed = false;
-let rightPressed = false;
+let upPressed = false; //
+let downPressed = false; //
+let leftPressed = false; //
+let rightPressed = false; //
 
-const main = document.querySelector('main');
+const main = document.querySelector('main');//
 const startDiv = document.querySelector('.startDiv');
 const startButton = document.querySelector('.start');
 const scoreElement = document.querySelector('.score p');
@@ -23,25 +23,31 @@ startButton.addEventListener('click', () => {
     updateLives();
 });
 
-// Initial maze configuration
-let maze = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 2, 0, 1, 0, 0, 0, 0, 3, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 1, 1, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
-    [1, 0, 0, 1, 0, 3, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
-    [1, 3, 1, 0, 0, 0, 0, 0, 0, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
-];
+
 
 function initializeGame() {
     main.innerHTML = '';
     score = 0;
     scoreElement.textContent = '0';
+ // Reset maze layout
+ maze = [
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+    [1, 2, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 1, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 1, 1],
+    [1, 0, 0, 1, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+];
 
+// Randomly place 3 enemies
+const numEnemies = 3;
+for (let i = 0; i < numEnemies; i++) {
+    placeRandomEnemy();
+}
     for (let y = 0; y < maze.length; y++) {
         for (let x = 0; x < maze[y].length; x++) {
             let block = document.createElement('div');
@@ -71,6 +77,16 @@ function initializeGame() {
             main.appendChild(block);
         }
     }
+}
+// Function to place a random enemy
+function placeRandomEnemy() {
+    let x, y;
+    do {
+        x = Math.floor(Math.random() * 10); // Random column
+        y = Math.floor(Math.random() * 10); // Random row
+    } while (maze[y][x] !== 0); // Ensure the position is empty
+
+    maze[y][x] = 3; // Place an enemy in the maze
 }
 
 function movePlayer(direction) {
@@ -151,6 +167,9 @@ function handleEnemyCollision() {
     player.classList.add('hit');
     lives--;
     updateLives();
+
+    // Teleport player to a new random position after losing a life
+    teleportPlayerToNewPosition();
     gameStarted = false;  // Temporarily disable movement
     
     setTimeout(() => {
@@ -162,7 +181,25 @@ function handleEnemyCollision() {
         }
     }, 1500);
 }
+function teleportPlayerToNewPosition() {
+    const player = document.querySelector('#player');
+    let newX, newY;
 
+    // Find an empty spot to teleport the player
+    do {
+        newX = Math.floor(Math.random() * 10); // Random column
+        newY = Math.floor(Math.random() * 10); // Random row
+    } while (maze[newY][newX] !== 0); // Ensure the position is empty
+
+    // Update the maze to reflect the new player position
+    const playerPos = getElementPosition(player);
+    maze[playerPos.y][playerPos.x] = 0; // Remove the player from the old position
+    maze[newY][newX] = 2; // Place the player in the new position
+
+    // Update the player’s visual position in the maze
+    player.style.gridColumnStart = newX + 1;
+    player.style.gridRowStart = newY + 1;
+}
 function updateLives() {
     livesElement.innerHTML = '';
     for (let i = 0; i < lives; i++) {
